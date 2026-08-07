@@ -58,7 +58,8 @@ php81_ver=8.1.34
 php82_ver=8.2.30
 php83_ver=8.3.29
 php84_ver=8.4.16
-php85_ver=8.5.1
+php85_ver=8.5.9
+php85_sha256=d735459c2cbaeb0673d416c33d372d9ff261d562f6b29da48f3e6aeaeca083af
 
 # Nodejs
 nodejs_ver=22.12.0
@@ -75,9 +76,9 @@ libsodium_up_ver=1.0.21
 libzip_ver=1.11.4
 argon2_ver=20171227
 imagemagick_ver=7.1.2-12
-imagick_ver=3.7.0
+imagick_ver=3.8.1
 imagick_oldver=3.4.4
-imagick_php85_ver=3.8.0
+pecl_imap_ver=1.0.3
 graphicsmagick_ver=1.3.46
 gmagick_ver=2.0.6RC1
 gmagick_oldver=1.1.7RC3
@@ -90,9 +91,9 @@ phalcon_ver=5.4.0
 phalcon_oldver=3.4.5
 yaf_ver=3.3.2
 yar_ver=2.2.0
-swoole_ver=6.1.6
+swoole_ver=6.2.2
 swoole_oldver=5.1.5
-xdebug_ver=3.5.0
+xdebug_ver=3.5.3
 xdebug_oldver=3.1.6
 
 # Ftp
@@ -112,7 +113,7 @@ pecl_memcache_ver=8.2
 pecl_memcache_oldver=4.0.5.2
 
 # MongoDB
-pecl_mongodb_ver=2.1.4
+pecl_mongodb_ver=2.3.3
 pecl_mongodb_oldver=1.19.1
 pecl_mongo_ver=1.6.16
 

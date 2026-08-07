@@ -20,14 +20,17 @@ Install_pecl_ldap() {
       yum -y install openldap-devel
     else
       apt-get -y install libldap2-dev
-      ln -s /usr/lib/${ARCH}-linux-gnu/libldap.so /usr/lib/
-      ln -s /usr/lib/${ARCH}-linux-gnu/liblber.so /usr/lib/
+      ldap_multiarch=$(dpkg-architecture -qDEB_HOST_MULTIARCH 2>/dev/null || gcc -print-multiarch 2>/dev/null)
+      if [ -z "${ldap_multiarch}" ]; then
+        echo "${CFAILURE}Unable to determine the LDAP multiarch library directory.${CEND}"
+        return 1
+      fi
     fi
     ${php_install_dir}/bin/phpize
     if [ "${PM}" == 'yum' ]; then
       ./configure --with-php-config=${php_install_dir}/bin/php-config --with-ldap --with-libdir=lib64
     else
-      ./configure --with-php-config=${php_install_dir}/bin/php-config --with-ldap --with-libdir=lib/x86_64-linux-gnu
+      ./configure --with-php-config=${php_install_dir}/bin/php-config --with-ldap --with-libdir=lib/${ldap_multiarch}
     fi
     make -j ${THREAD} && make install
     popd > /dev/null

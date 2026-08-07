@@ -619,7 +619,14 @@ checkDownload() {
     src_url=${mirror_link}/oneinstack/src/libsodium-${libsodium_up_ver}.tar.gz && Download_src
     src_url=${mirror_link}/oneinstack/src/libzip-${libzip_ver}.tar.gz && Download_src
   elif [ "${php_option}" == '15' ] || [ "${mphp_ver}" == '85' ]; then
-    src_url=${mirror_link}/oneinstack/src/php-${php85_ver}.tar.gz && Download_src
+    php85_archive=php-${php85_ver}.tar.gz
+    src_url=https://www.php.net/distributions/${php85_archive}
+    Download_src
+    if ! printf '%s  %s\n' "${php85_sha256}" "${php85_archive}" | sha256sum -c - >/dev/null 2>&1; then
+      rm -f "${php85_archive}"
+      echo "${CFAILURE}${php85_archive} checksum verification failed.${CEND}"
+      return 1
+    fi
     src_url=${mirror_link}/oneinstack/src/argon2-${argon2_ver}.tar.gz && Download_src
     src_url=${mirror_link}/oneinstack/src/libsodium-${libsodium_up_ver}.tar.gz && Download_src
     src_url=${mirror_link}/oneinstack/src/libzip-${libzip_ver}.tar.gz && Download_src
@@ -700,10 +707,8 @@ checkDownload() {
     echo "Download ImageMagick..."
     src_url=${mirror_link}/oneinstack/src/ImageMagick-${imagemagick_ver}.tar.gz && Download_src
     echo "Download imagick..."
-    if [[ "${php_option}" =~ ^1$ ]]; then
+    if [[ "${php_option}" =~ ^[1-3]$ ]] || [[ "${mphp_ver}" =~ ^5[3-5]$ ]]; then
       src_url=https://pecl.php.net/get/imagick-${imagick_oldver}.tgz && Download_src
-    elif [[ "${php_option}" =~ ^15$ ]] || [[ "${mphp_ver}" =~ ^85$ ]]; then
-      src_url=https://pecl.php.net/get/imagick-${imagick_php85_ver}.tgz && Download_src
     else
       src_url=https://pecl.php.net/get/imagick-${imagick_ver}.tgz && Download_src
     fi
@@ -778,10 +783,16 @@ checkDownload() {
 
   # pecl_mongodb
   if [ "${pecl_mongodb}" == '1' ]; then
-    echo "Download pecl mongo for php..."
-    src_url=https://pecl.php.net/get/mongo-${pecl_mongo_ver}.tgz && Download_src
-    echo "Download pecl mongodb for php..."
-    src_url=https://pecl.php.net/get/mongodb-${pecl_mongodb_ver}.tgz && Download_src
+    if [[ "${php_option}" =~ ^[1-4]$ ]] || [[ "${mphp_ver}" =~ ^5[3-6]$ ]]; then
+      echo "Download pecl mongo for php..."
+      src_url=https://pecl.php.net/get/mongo-${pecl_mongo_ver}.tgz && Download_src
+    elif [[ "${php_option}" =~ ^1[1-5]$ ]] || [[ "${mphp_ver}" =~ ^8[1-5]$ ]]; then
+      echo "Download pecl mongodb for PHP 8.1+..."
+      src_url=https://pecl.php.net/get/mongodb-${pecl_mongodb_ver}.tgz && Download_src
+    else
+      echo "Download pecl mongodb for legacy PHP..."
+      src_url=https://pecl.php.net/get/mongodb-${pecl_mongodb_oldver}.tgz && Download_src
+    fi
   fi
 
   # nodejs

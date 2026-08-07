@@ -6,27 +6,42 @@ Install_PHP85() {
     OS_VERSION=$(grep -oE '[0-9]+\.[0-9]+' /etc/redhat-release | cut -d'.' -f1)
     if [ "${OS_VERSION}" -lt "8" ]; then
       echo "${CFAILURE}Error: PHP 8.5 cannot be installed on CentOS ${OS_VERSION}. Minimum required version is CentOS 8.${CEND}"
-      kill -9 $$; exit 1;
+      return 1
     fi
   fi
 
-  pushd ${oneinstack_dir}/src > /dev/null
+  pushd ${oneinstack_dir}/src > /dev/null || return 1
   
   if [ ! -e "${php_install_dir}/bin/phpize" ]; then
     PHP_version=${php85_ver}
     PHP_main_ver=85
     
     # 下载和校验
-    src_url=https://www.php.net/distributions/php-${PHP_version}.tar.gz && Download_src
+    php85_archive=php-${PHP_version}.tar.gz
+    src_url=https://www.php.net/distributions/${php85_archive}
+    Download_src
+    if ! printf '%s  %s\n' "${php85_sha256}" "${php85_archive}" | sha256sum -c - >/dev/null 2>&1; then
+      rm -f "${php85_archive}"
+      echo "${CFAILURE}${php85_archive} checksum verification failed.${CEND}"
+      popd > /dev/null
+      return 1
+    fi
     
     # 编译安装
-    tar xzf php-${PHP_version}.tar.gz
-    pushd php-${PHP_version} > /dev/null
+    if ! tar xzf "${php85_archive}"; then
+      echo "${CFAILURE}PHP ${PHP_version} source extraction failed.${CEND}"
+      popd > /dev/null
+      return 1
+    fi
+    pushd php-${PHP_version} > /dev/null || {
+      popd > /dev/null
+      return 1
+    }
     make clean
     [ ! -d "${php_install_dir}" ] && mkdir -p ${php_install_dir}
     
     # PHP 8.5 特定的编译选项
-    ./configure --prefix=${php_install_dir} \
+    if ! ./configure --prefix=${php_install_dir} \
     --with-config-file-path=${php_install_dir}/etc \
     --with-config-file-scan-dir=${php_install_dir}/etc/php.d \
     --with-fpm-user=${run_user} \
@@ -47,7 +62,6 @@ Install_PHP85() {
     --with-sodium \
     --enable-bcmath \
     --enable-fpm \
-    --enable-xml \
     --enable-sysvsem \
     --enable-sysvshm \
     --enable-sysvmsg \
@@ -58,15 +72,25 @@ Install_PHP85() {
     --enable-soap \
     --enable-gd \
     --enable-intl \
-    --enable-opcache \
     --enable-ftp \
     --enable-exif \
     --enable-calendar \
     --without-pear \
     --disable-phar \
-    --disable-rpath
+    --disable-rpath; then
+      echo "${CFAILURE}PHP ${PHP_version} configure failed.${CEND}"
+      popd > /dev/null
+      popd > /dev/null
+      return 1
+    fi
 
-    make EXTRA_CFLAGS="-Wno-error=incompatible-pointer-types -Wno-error=discarded-qualifiers" -j ${THREAD} && make install
+    if ! make EXTRA_CFLAGS="-Wno-error=incompatible-pointer-types -Wno-error=discarded-qualifiers" -j ${THREAD} || ! make install; then
+      rm -rf "${php_install_dir}"
+      echo "${CFAILURE}PHP ${PHP_version} build failed.${CEND}"
+      popd > /dev/null
+      popd > /dev/null
+      return 1
+    fi
     
     if [ -e "${php_install_dir}/bin/phpize" ]; then
       # php.ini配置
@@ -204,16 +228,20 @@ EOF
       # 启动脚本
       \cp ${oneinstack_dir}/init.d/php-fpm.service /lib/systemd/system/
       sed -i "s@/usr/local/php@${php_install_dir}@g" /lib/systemd/system/php-fpm.service
-      systemctl enable --now php-fpm.service
+      if ! systemctl enable --now php-fpm.service; then
+        echo "${CFAILURE}PHP ${PHP_version} service could not be enabled or started.${CEND}"
+        popd > /dev/null
+        popd > /dev/null
+        return 1
+      fi
 
       # 检测php-fpm是否启动成功
-      systemctl status php-fpm.service | grep "Active: active (running)"
-      if [ $? -ne 0 ]; then
-        systemctl restart php-fpm.service
-        systemctl status php-fpm.service | grep "Active: active (running)"
-        if [ $? -ne 0 ]; then
+      if ! systemctl is-active --quiet php-fpm.service; then
+        if ! systemctl restart php-fpm.service || ! systemctl is-active --quiet php-fpm.service; then
           echo "${CFAILURE}PHP ${PHP_version} install failed, Please Contact the author! ${CEND}"
-          kill -9 $$; exit 1;
+          popd > /dev/null
+          popd > /dev/null
+          return 1
         fi
       fi
 
@@ -225,7 +253,9 @@ EOF
     else
       rm -rf ${php_install_dir}
       echo "${CFAILURE}PHP ${PHP_version} install failed, Please Contact the author! ${CEND}"
-      kill -9 $$; exit 1;
+      popd > /dev/null
+      popd > /dev/null
+      return 1
     fi
     popd > /dev/null
   fi

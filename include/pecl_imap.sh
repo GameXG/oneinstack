@@ -32,7 +32,13 @@ EOF
     PHP_detail_ver=$(${php_install_dir}/bin/php-config --version)
     src_url=https://secure.php.net/distributions/php-${PHP_detail_ver}.tar.gz && Download_src
     tar xzf php-${PHP_detail_ver}.tar.gz
-    pushd php-${PHP_detail_ver}/ext/imap > /dev/null
+    if [ -d "php-${PHP_detail_ver}/ext/imap" ]; then
+      pushd php-${PHP_detail_ver}/ext/imap > /dev/null
+    else
+      src_url=https://pecl.php.net/get/imap-${pecl_imap_ver}.tgz && Download_src
+      tar xzf imap-${pecl_imap_ver}.tgz
+      pushd imap-${pecl_imap_ver} > /dev/null
+    fi
     ${php_install_dir}/bin/phpize
     ./configure --with-php-config=${php_install_dir}/bin/php-config --with-kerberos --with-imap --with-imap-ssl
     make -j ${THREAD} && make install
@@ -40,7 +46,7 @@ EOF
     if [ -f "${phpExtensionDir}/imap.so" ]; then
       echo 'extension=imap.so' > ${php_install_dir}/etc/php.d/04-imap.ini
       echo "${CSUCCESS}PHP imap module installed successfully! ${CEND}"
-      rm -rf php-${PHP_detail_ver}
+      rm -rf php-${PHP_detail_ver} imap-${pecl_imap_ver}
     else
       echo "${CFAILURE}PHP imap module install failed, Please contact the author! ${CEND}" && grep -Ew 'NAME|ID|ID_LIKE|VERSION_ID|PRETTY_NAME' /etc/os-release
     fi

@@ -1136,6 +1136,7 @@ case "${php_option}" in
   15)
     . include/php-8.5.sh
     Install_PHP85 2>&1 | tee -a ${oneinstack_dir}/install.log
+    [ "${PIPESTATUS[0]}" -ne 0 ] && exit 1
     ;;
 esac
 

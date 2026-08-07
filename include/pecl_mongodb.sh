@@ -12,7 +12,9 @@ Install_pecl_mongodb() {
   if [ -e "${php_install_dir}/bin/phpize" ]; then
     pushd ${oneinstack_dir}/src > /dev/null
     phpExtensionDir=$(${php_install_dir}/bin/php-config --extension-dir)
-    if [[ "$(${php_install_dir}/bin/php-config --version | awk -F. '{print $1$2}')" =~ ^5[3-4]$ ]]; then
+    PHP_detail_ver=$(${php_install_dir}/bin/php-config --version)
+    PHP_main_ver=${PHP_detail_ver%.*}
+    if [[ "${PHP_main_ver}" =~ ^5\.[3-6]$ ]]; then
       src_url=https://pecl.php.net/get/mongo-${pecl_mongo_ver}.tgz && Download_src
       tar xzf mongo-${pecl_mongo_ver}.tgz
       pushd mongo-${pecl_mongo_ver} > /dev/null
@@ -28,14 +30,14 @@ Install_pecl_mongodb() {
         echo "${CFAILURE}PHP mongo module install failed, Please contact the author! ${CEND}" && grep -Ew 'NAME|ID|ID_LIKE|VERSION_ID|PRETTY_NAME' /etc/os-release
       fi
     else
-      if [[ "$(${php_install_dir}/bin/php-config --version | awk -F. '{print $1$2}')" =~ ^7[0-2]$ ]]; then
-        src_url=https://pecl.php.net/get/mongodb-${pecl_mongodb_oldver}.tgz && Download_src
-        tar xzf mongodb-${pecl_mongodb_oldver}.tgz
-        pushd mongodb-${pecl_mongodb_oldver} > /dev/null
-      else
+      if [[ "${PHP_main_ver}" =~ ^8\.[1-9]$ ]]; then
         src_url=https://pecl.php.net/get/mongodb-${pecl_mongodb_ver}.tgz && Download_src
         tar xzf mongodb-${pecl_mongodb_ver}.tgz
         pushd mongodb-${pecl_mongodb_ver} > /dev/null
+      else
+        src_url=https://pecl.php.net/get/mongodb-${pecl_mongodb_oldver}.tgz && Download_src
+        tar xzf mongodb-${pecl_mongodb_oldver}.tgz
+        pushd mongodb-${pecl_mongodb_oldver} > /dev/null
       fi
       ${php_install_dir}/bin/phpize
       ./configure --with-php-config=${php_install_dir}/bin/php-config

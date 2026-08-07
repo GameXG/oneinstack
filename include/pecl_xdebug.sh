@@ -14,8 +14,8 @@ Install_pecl_xdebug() {
     phpExtensionDir=$(${php_install_dir}/bin/php-config --extension-dir)
     PHP_detail_ver=$(${php_install_dir}/bin/php-config --version)
     PHP_main_ver=${PHP_detail_ver%.*}
-    if [[ "${PHP_main_ver}" =~ ^7.[0-4]$|^80$ ]]; then
-      if [[ "${PHP_main_ver}" =~ ^7.[0-1]$ ]]; then
+    if [[ "${PHP_main_ver}" =~ ^7\.[0-4]$|^8\.[0-5]$ ]]; then
+      if [[ "${PHP_main_ver}" =~ ^7\.[0-4]$ ]]; then
         src_url=https://pecl.php.net/get/xdebug-${xdebug_oldver}.tgz && Download_src
         tar xzf xdebug-${xdebug_oldver}.tgz
         pushd xdebug-${xdebug_oldver} > /dev/null
@@ -40,10 +40,9 @@ Install_pecl_xdebug() {
         cat > ${php_install_dir}/etc/php.d/08-xdebug.ini << EOF
 [xdebug]
 zend_extension=xdebug.so
-xdebug.trace_output_dir=/tmp/xdebug
-xdebug.profiler_output_dir = /tmp/xdebug
-xdebug.profiler_enable = On
-xdebug.profiler_enable_trigger = 1
+xdebug.mode=profile
+xdebug.output_dir=/tmp/xdebug
+xdebug.start_with_request=trigger
 EOF
         echo "${CSUCCESS}PHP xdebug module installed successfully! ${CEND}"
         echo; echo "Webgrind URL: ${CMSG}http://{Public IP}/webgrind ${CEND}"
