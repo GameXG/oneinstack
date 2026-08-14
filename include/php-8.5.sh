@@ -15,6 +15,30 @@ Install_PHP85() {
   if [ ! -e "${php_install_dir}/bin/phpize" ]; then
     PHP_version=${php85_ver}
     PHP_main_ver=85
+
+    if [ ! -e "/usr/local/lib/libiconv.la" ]; then
+      if ! tar xzf "libiconv-${libiconv_ver}.tar.gz" || ! pushd "libiconv-${libiconv_ver}" > /dev/null; then
+        echo "${CFAILURE}libiconv ${libiconv_ver} source extraction failed.${CEND}"
+        popd > /dev/null
+        return 1
+      fi
+      if ! ./configure || ! make -j ${THREAD} || ! make install; then
+        echo "${CFAILURE}libiconv ${libiconv_ver} build failed.${CEND}"
+        popd > /dev/null
+        popd > /dev/null
+        return 1
+      fi
+      popd > /dev/null
+      rm -rf "libiconv-${libiconv_ver}"
+    fi
+    if ! grep -qs '^/usr/local/lib$' /etc/ld.so.conf /etc/ld.so.conf.d/*.conf; then
+      echo '/usr/local/lib' > /etc/ld.so.conf.d/local.conf
+    fi
+    if ! ldconfig; then
+      echo "${CFAILURE}libiconv ${libiconv_ver} linker cache update failed.${CEND}"
+      popd > /dev/null
+      return 1
+    fi
     
     # 下载和校验
     php85_archive=php-${PHP_version}.tar.gz
@@ -55,7 +79,7 @@ Install_PHP85() {
     --with-zlib \
     --with-zip \
     --with-curl \
-    --with-iconv \
+    --with-iconv=/usr/local \
     --with-gettext \
     --with-readline \
     --with-ldapsasl \
