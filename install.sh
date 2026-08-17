@@ -1183,7 +1183,9 @@ PHP_addons() {
   if [ "${pecl_imagick}" == '1' ]; then
     . include/ImageMagick.sh
     Install_ImageMagick 2>&1 | tee -a ${oneinstack_dir}/install.log
+    [ "${PIPESTATUS[0]}" -ne 0 ] && return 1
     Install_pecl_imagick 2>&1 | tee -a ${oneinstack_dir}/install.log
+    [ "${PIPESTATUS[0]}" -ne 0 ] && return 1
   fi
 
   # gmagick
@@ -1278,13 +1280,15 @@ PHP_addons() {
   fi
 }
 
-[ "${mphp_addons_flag}" != 'y' ] && PHP_addons
+if [ "${mphp_addons_flag}" != 'y' ]; then
+  PHP_addons || exit 1
+fi
 
 if [ "${mphp_flag}" == 'y' ]; then
   . include/mphp.sh
   Install_MPHP 2>&1 | tee -a ${oneinstack_dir}/install.log
   php_install_dir=${php_install_dir}${mphp_ver}
-  PHP_addons
+  PHP_addons || exit 1
 fi
 
 # JDK

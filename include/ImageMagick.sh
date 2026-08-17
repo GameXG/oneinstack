@@ -12,18 +12,47 @@ Install_ImageMagick() {
   if [ -d "${imagick_install_dir}" ]; then
     echo "${CWARNING}ImageMagick already installed! ${CEND}"
   else
-    pushd ${oneinstack_dir}/src > /dev/null
-    tar xzf ImageMagick-${imagemagick_ver}.tar.gz
+    pushd ${oneinstack_dir}/src > /dev/null || return 1
+    imagemagick_archive=ImageMagick-${imagemagick_ver}.tar.gz
+    imagemagick_source_dir=ImageMagick-${imagemagick_ver}
+
+    if [ ! -s "${imagemagick_archive}" ] || ! tar tzf "${imagemagick_archive}" > /dev/null 2>&1; then
+      echo "${CWARNING}${imagemagick_archive} is incomplete; downloading it again.${CEND}"
+      rm -f "${imagemagick_archive}"
+      src_url=${mirror_link}/oneinstack/src/${imagemagick_archive}
+      Download_src no_kill
+    fi
+    if [ ! -s "${imagemagick_archive}" ] || ! tar tzf "${imagemagick_archive}" > /dev/null 2>&1; then
+      rm -f "${imagemagick_archive}"
+      echo "${CFAILURE}${imagemagick_archive} download or integrity check failed.${CEND}"
+      popd > /dev/null
+      return 1
+    fi
+
+    rm -rf "${imagemagick_source_dir}"
+    if ! tar xzf "${imagemagick_archive}"; then
+      echo "${CFAILURE}ImageMagick ${imagemagick_ver} source extraction failed.${CEND}"
+      popd > /dev/null
+      return 1
+    fi
     #if [ "${PM}" == 'yum' ]; then
     #  yum -y install libwebp-devel
     #elif [ "${PM}" == 'apt-get' ]; then
     #  yum -y install libwebp-dev
     #fi
-    pushd ImageMagick-${imagemagick_ver} > /dev/null
-    ./configure --prefix=${imagick_install_dir} --enable-shared --enable-static
-    make -j ${THREAD} && make install
+    if ! pushd "${imagemagick_source_dir}" > /dev/null; then
+      echo "${CFAILURE}ImageMagick ${imagemagick_ver} source directory is missing.${CEND}"
+      popd > /dev/null
+      return 1
+    fi
+    if ! ./configure --prefix=${imagick_install_dir} --enable-shared --enable-static || ! make -j ${THREAD} || ! make install; then
+      echo "${CFAILURE}ImageMagick ${imagemagick_ver} build failed.${CEND}"
+      popd > /dev/null
+      popd > /dev/null
+      return 1
+    fi
     popd > /dev/null
-    rm -rf ImageMagick-${imagemagick_ver}
+    rm -rf "${imagemagick_source_dir}"
     popd > /dev/null
   fi
 }
@@ -59,6 +88,8 @@ Install_pecl_imagick() {
       rm -rf imagick-${imagick_ver} imagick-${imagick_oldver}
     else
       echo "${CFAILURE}PHP imagick module install failed, Please contact the author! ${CEND}" && grep -Ew 'NAME|ID|ID_LIKE|VERSION_ID|PRETTY_NAME' /etc/os-release
+      popd > /dev/null
+      return 1
     fi
     popd > /dev/null
   fi
