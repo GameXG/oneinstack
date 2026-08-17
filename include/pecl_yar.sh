@@ -13,11 +13,12 @@ Install_pecl_yar() {
     pushd ${oneinstack_dir}/src > /dev/null
     PHP_detail_ver=$(${php_install_dir}/bin/php-config --version)
     PHP_main_ver=${PHP_detail_ver%.*}
-    if [[ "${PHP_main_ver}" =~ ^7.[0-4]$|^8.0$ ]]; then
+    if [[ "${PHP_main_ver}" == 7.* || "${PHP_main_ver}" == 8.* ]]; then
       phpExtensionDir=$(${php_install_dir}/bin/php-config --extension-dir)
-      src_url=https://pecl.php.net/get/yar-${yar_ver}.tgz && Download_src
-      tar xzf yar-${yar_ver}.tgz
-      pushd yar-${yar_ver} > /dev/null
+      yar_selected_ver=${yar_php70_up_ver}
+      src_url=https://pecl.php.net/get/yar-${yar_selected_ver}.tgz && Download_src
+      tar xzf yar-${yar_selected_ver}.tgz
+      pushd yar-${yar_selected_ver} > /dev/null
       ${php_install_dir}/bin/phpize
       ./configure --with-php-config=${php_install_dir}/bin/php-config --with-curl=${curl_install_dir}
       make -j ${THREAD} && make install
@@ -25,7 +26,7 @@ Install_pecl_yar() {
       if [ -f "${phpExtensionDir}/yar.so" ]; then
         echo 'extension=yar.so' > ${php_install_dir}/etc/php.d/04-yar.ini
         echo "${CSUCCESS}PHP yar module installed successfully! ${CEND}"
-        rm -rf yar-${yar_ver}
+        rm -rf yar-${yar_selected_ver}
       else
         echo "${CFAILURE}PHP yar module install failed, Please contact the author! ${CEND}" && grep -Ew 'NAME|ID|ID_LIKE|VERSION_ID|PRETTY_NAME' /etc/os-release
       fi

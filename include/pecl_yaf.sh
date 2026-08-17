@@ -13,11 +13,12 @@ Install_pecl_yaf() {
     pushd ${oneinstack_dir}/src > /dev/null
     PHP_detail_ver=$(${php_install_dir}/bin/php-config --version)
     PHP_main_ver=${PHP_detail_ver%.*}
-    if [[ "${PHP_main_ver}" =~ ^7.[0-4]$|^8.0$ ]]; then
+    if [[ "${PHP_main_ver}" == 7.* || "${PHP_main_ver}" == 8.* ]]; then
       phpExtensionDir=$(${php_install_dir}/bin/php-config --extension-dir)
-      src_url=https://pecl.php.net/get/yaf-${yaf_ver}.tgz && Download_src
-      tar xzf yaf-${yaf_ver}.tgz
-      pushd yaf-${yaf_ver} > /dev/null
+      yaf_selected_ver=${yaf_php70_up_ver}
+      src_url=https://pecl.php.net/get/yaf-${yaf_selected_ver}.tgz && Download_src
+      tar xzf yaf-${yaf_selected_ver}.tgz
+      pushd yaf-${yaf_selected_ver} > /dev/null
       ${php_install_dir}/bin/phpize
       ./configure --with-php-config=${php_install_dir}/bin/php-config
       make -j ${THREAD} && make install
@@ -25,7 +26,7 @@ Install_pecl_yaf() {
       if [ -f "${phpExtensionDir}/yaf.so" ]; then
         echo 'extension=yaf.so' > ${php_install_dir}/etc/php.d/04-yaf.ini
         echo "${CSUCCESS}PHP yaf module installed successfully! ${CEND}"
-        rm -rf yaf-${yaf_ver}
+        rm -rf yaf-${yaf_selected_ver}
       else
         echo "${CFAILURE}PHP yaf module install failed, Please contact the author! ${CEND}" && grep -Ew 'NAME|ID|ID_LIKE|VERSION_ID|PRETTY_NAME' /etc/os-release
       fi

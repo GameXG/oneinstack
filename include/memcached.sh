@@ -42,17 +42,18 @@ Install_pecl_memcache() {
     phpExtensionDir=$(${php_install_dir}/bin/php-config --extension-dir)
     PHP_detail_ver=$(${php_install_dir}/bin/php-config --version)
     PHP_main_ver=${PHP_detail_ver%.*}
-    if [ "$(${php_install_dir}/bin/php-config --version | awk -F. '{print $1}')" == '5' ]; then
-      tar xzf memcache-3.0.8.tgz
-      pushd memcache-3.0.8 > /dev/null
-    elif [ "$(${php_install_dir}/bin/php-config --version | awk -F. '{print $1}')" == '7' ]; then
-      tar xzf memcache-${pecl_memcache_oldver}.tgz
-      pushd memcache-${pecl_memcache_oldver} > /dev/null
-    else
-      #git clone https://github.com/websupport-sk/pecl-memcache.git
-      tar xzf memcache-${pecl_memcache_ver}.tgz
-      pushd memcache-${pecl_memcache_ver} > /dev/null
-    fi
+    case "${PHP_main_ver}" in
+      5.3|5.4|5.5|5.6) pecl_memcache_selected_ver=${pecl_memcache_php53_56_ver} ;;
+      7.*) pecl_memcache_selected_ver=${pecl_memcache_php70_74_ver} ;;
+      8.*) pecl_memcache_selected_ver=${pecl_memcache_php80_up_ver} ;;
+      *)
+        echo "${CWARNING}Your php ${PHP_detail_ver} does not support memcache! ${CEND}"
+        popd > /dev/null
+        return 0
+        ;;
+    esac
+    tar xzf memcache-${pecl_memcache_selected_ver}.tgz
+    pushd memcache-${pecl_memcache_selected_ver} > /dev/null
     ${php_install_dir}/bin/phpize
     ./configure --with-php-config=${php_install_dir}/bin/php-config
     make -j ${THREAD} && make install
@@ -60,7 +61,7 @@ Install_pecl_memcache() {
     if [ -f "${phpExtensionDir}/memcache.so" ]; then
       echo "extension=memcache.so" > ${php_install_dir}/etc/php.d/05-memcache.ini
       echo "${CSUCCESS}PHP memcache module installed successfully! ${CEND}"
-      rm -rf memcache-${pecl_memcache_ver} memcache-${pecl_memcache_oldver} memcache-3.0.8
+      rm -rf memcache-${pecl_memcache_selected_ver}
     else
       echo "${CFAILURE}PHP memcache module install failed, Please contact the author! ${CEND}" && grep -Ew 'NAME|ID|ID_LIKE|VERSION_ID|PRETTY_NAME' /etc/os-release
     fi
@@ -72,6 +73,8 @@ Install_pecl_memcached() {
   if [ -e "${php_install_dir}/bin/phpize" ]; then
     pushd ${oneinstack_dir}/src > /dev/null
     phpExtensionDir=$(${php_install_dir}/bin/php-config --extension-dir)
+    PHP_detail_ver=$(${php_install_dir}/bin/php-config --version)
+    PHP_main_ver=${PHP_detail_ver%.*}
     # php memcached extension
     tar xzf libmemcached-${libmemcached_ver}.tar.gz
     patch -d libmemcached-${libmemcached_ver} -p0 < libmemcached-build.patch
@@ -83,13 +86,17 @@ Install_pecl_memcached() {
     popd > /dev/null
     rm -rf libmemcached-${libmemcached_ver}
 
-    if [ "$(${php_install_dir}/bin/php-config --version | awk -F. '{print $1}')" == '5' ]; then
-      tar xzf memcached-${pecl_memcached_oldver}.tgz
-      pushd memcached-${pecl_memcached_oldver} > /dev/null
-    else
-      tar xzf memcached-${pecl_memcached_ver}.tgz
-      pushd memcached-${pecl_memcached_ver} > /dev/null
-    fi
+    case "${PHP_main_ver}" in
+      5.3|5.4|5.5|5.6) pecl_memcached_selected_ver=${pecl_memcached_php53_56_ver} ;;
+      7.*|8.*) pecl_memcached_selected_ver=${pecl_memcached_php70_up_ver} ;;
+      *)
+        echo "${CWARNING}Your php ${PHP_detail_ver} does not support memcached! ${CEND}"
+        popd > /dev/null
+        return 0
+        ;;
+    esac
+    tar xzf memcached-${pecl_memcached_selected_ver}.tgz
+    pushd memcached-${pecl_memcached_selected_ver} > /dev/null
     ${php_install_dir}/bin/phpize
     ./configure --with-php-config=${php_install_dir}/bin/php-config
     make -j ${THREAD} && make install
@@ -100,7 +107,7 @@ extension=memcached.so
 memcached.use_sasl=1
 EOF
       echo "${CSUCCESS}PHP memcached module installed successfully! ${CEND}"
-      rm -rf memcached-${pecl_memcached_oldver} memcached-${pecl_memcached_ver}
+      rm -rf memcached-${pecl_memcached_selected_ver}
     else
       echo "${CFAILURE}PHP memcached module install failed, Please contact the author! ${CEND}" && grep -Ew 'NAME|ID|ID_LIKE|VERSION_ID|PRETTY_NAME' /etc/os-release
     fi

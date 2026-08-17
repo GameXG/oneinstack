@@ -12,13 +12,19 @@ Install_APCU() {
   if [ -e "${php_install_dir}/bin/phpize" ]; then
     pushd ${oneinstack_dir}/src > /dev/null
     phpExtensionDir=`${php_install_dir}/bin/php-config --extension-dir`
-    if [ "`${php_install_dir}/bin/php-config --version | awk -F. '{print $1}'`" == '5' ]; then
-      tar xzf apcu-${apcu_oldver}.tgz
-      pushd apcu-${apcu_oldver} > /dev/null
-    else
-      tar xzf apcu-${apcu_ver}.tgz
-      pushd apcu-${apcu_ver} > /dev/null
-    fi
+    PHP_detail_ver=$(${php_install_dir}/bin/php-config --version)
+    PHP_main_ver=${PHP_detail_ver%.*}
+    case "${PHP_main_ver}" in
+      5.3|5.4|5.5|5.6) apcu_selected_ver=${apcu_php53_56_ver} ;;
+      7.*|8.*) apcu_selected_ver=${apcu_php70_up_ver} ;;
+      *)
+        echo "${CWARNING}Your php ${PHP_detail_ver} does not support apcu! ${CEND}"
+        popd > /dev/null
+        return 0
+        ;;
+    esac
+    tar xzf apcu-${apcu_selected_ver}.tgz
+    pushd apcu-${apcu_selected_ver} > /dev/null
     ${php_install_dir}/bin/phpize
     ./configure --with-php-config=${php_install_dir}/bin/php-config
     make -j ${THREAD} && make install
@@ -34,7 +40,7 @@ EOF
       /bin/cp apc.php ${wwwroot_dir}/default
       popd > /dev/null
       echo "${CSUCCESS}PHP apcu module installed successfully! ${CEND}"
-      rm -rf apcu-${apcu_ver} apcu-${apcu_oldver} package.xml
+      rm -rf apcu-${apcu_selected_ver} package.xml
     else
       echo "${CFAILURE}PHP apcu module install failed, Please contact the author! ${CEND}" && grep -Ew 'NAME|ID|ID_LIKE|VERSION_ID|PRETTY_NAME' /etc/os-release
     fi

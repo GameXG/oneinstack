@@ -563,6 +563,30 @@ checkDownload() {
     src_url=${mirror_link}/oneinstack/src/freetype-${freetype_ver}.tar.gz && Download_src
   fi
 
+  case "${php_option}" in
+    1) php_extension_target=5.3 ;;
+    2) php_extension_target=5.4 ;;
+    3) php_extension_target=5.5 ;;
+    4) php_extension_target=5.6 ;;
+    5) php_extension_target=7.0 ;;
+    6) php_extension_target=7.1 ;;
+    7) php_extension_target=7.2 ;;
+    8) php_extension_target=7.3 ;;
+    9) php_extension_target=7.4 ;;
+    10) php_extension_target=8.0 ;;
+    11) php_extension_target=8.1 ;;
+    12) php_extension_target=8.2 ;;
+    13) php_extension_target=8.3 ;;
+    14) php_extension_target=8.4 ;;
+    15) php_extension_target=8.5 ;;
+    *) php_extension_target=${PHP_main_ver} ;;
+  esac
+  php_extension_targets=${php_extension_target}
+  if [[ "${mphp_ver}" =~ ^5[3-6]$|^7[0-4]$|^8[0-5]$ ]]; then
+    mphp_extension_target=${mphp_ver:0:1}.${mphp_ver:1:1}
+    [ "${mphp_extension_target}" != "${php_extension_target}" ] && php_extension_targets="${php_extension_targets} ${mphp_extension_target}"
+  fi
+
   if [ "${php_option}" == '1' ] || [ "${mphp_ver}" == '53' ]; then
     src_url=${mirror_link}/oneinstack/src/debian_patches_disable_SSLv2_for_openssl_1_0_0.patch && Download_src
     src_url=${mirror_link}/oneinstack/src/php5.3patch && Download_src
@@ -643,11 +667,14 @@ checkDownload() {
       ;;
     2)
       echo "Download apcu..."
-      if [[ "${php_option}" =~ ^[1-4]$ ]]; then
-        src_url=https://pecl.php.net/get/apcu-${apcu_oldver}.tgz && Download_src
-      else
-        src_url=https://pecl.php.net/get/apcu-${apcu_ver}.tgz && Download_src
-      fi
+      for php_extension_target in ${php_extension_targets}; do
+        case "${php_extension_target}" in
+          5.3|5.4|5.5|5.6) apcu_selected_ver=${apcu_php53_56_ver} ;;
+          7.*|8.*) apcu_selected_ver=${apcu_php70_up_ver} ;;
+          *) continue ;;
+        esac
+        src_url=https://pecl.php.net/get/apcu-${apcu_selected_ver}.tgz && Download_src
+      done
       ;;
     3)
       if [[ "${php_option}" =~ ^[1-4]$ ]]; then
@@ -735,16 +762,17 @@ checkDownload() {
 
   # pecl_redis
   if [ "${pecl_redis}" == '1' ]; then
-    if [[ "${php_option}" =~ ^[1-4]$ ]]; then
-      echo "Download pecl_redis for php 5.x..."
-      src_url=https://pecl.php.net/get/redis-4.3.0.tgz && Download_src
-    elif [[ "${php_option}" =~ ^[5-6]$ ]]; then
-      echo "Download pecl_redis for php 7.0~7.1..."
-      src_url=https://pecl.php.net/get/redis-5.3.7.tgz && Download_src
-    else
-      echo "Download pecl_redis for php 7.2+..."
-      src_url=https://pecl.php.net/get/redis-${pecl_redis_ver}.tgz && Download_src
-    fi
+    for php_extension_target in ${php_extension_targets}; do
+      case "${php_extension_target}" in
+        5.3|5.4|5.5|5.6) pecl_redis_selected_ver=${pecl_redis_php53_56_ver} ;;
+        7.0|7.1) pecl_redis_selected_ver=${pecl_redis_php70_71_ver} ;;
+        7.2|7.3) pecl_redis_selected_ver=${pecl_redis_php72_73_ver} ;;
+        7.4|8.*) pecl_redis_selected_ver=${pecl_redis_php74_up_ver} ;;
+        *) continue ;;
+      esac
+      echo "Download pecl_redis ${pecl_redis_selected_ver} for PHP ${php_extension_target}..."
+      src_url=https://pecl.php.net/get/redis-${pecl_redis_selected_ver}.tgz && Download_src
+    done
   fi
 
   # memcached-server
@@ -758,41 +786,46 @@ checkDownload() {
   if [ "${pecl_memcached}" == '1' ]; then
     echo "Download libmemcached..."
     src_url=${mirror_link}/oneinstack/src/libmemcached-${libmemcached_ver}.tar.gz && Download_src
-    if [[ "${php_option}" =~ ^[1-4]$ ]]; then
-      echo "Download pecl_memcached for php..."
-      src_url=https://pecl.php.net/get/memcached-${pecl_memcached_oldver}.tgz && Download_src
-    else
-      echo "Download pecl_memcached for php 7.x..."
-      src_url=https://pecl.php.net/get/memcached-${pecl_memcached_ver}.tgz && Download_src
-    fi
+    for php_extension_target in ${php_extension_targets}; do
+      case "${php_extension_target}" in
+        5.3|5.4|5.5|5.6) pecl_memcached_selected_ver=${pecl_memcached_php53_56_ver} ;;
+        7.*|8.*) pecl_memcached_selected_ver=${pecl_memcached_php70_up_ver} ;;
+        *) continue ;;
+      esac
+      echo "Download pecl_memcached ${pecl_memcached_selected_ver} for PHP ${php_extension_target}..."
+      src_url=https://pecl.php.net/get/memcached-${pecl_memcached_selected_ver}.tgz && Download_src
+    done
   fi
 
   # memcached-server pecl_memcached pecl_memcache
   if [ "${pecl_memcache}" == '1' ]; then
-    if [[ "${php_option}" =~ ^[1-4]$ ]]; then
-      echo "Download pecl_memcache for php 5.x..."
-      src_url=https://pecl.php.net/get/memcache-3.0.8.tgz && Download_src
-    elif [[ "${php_option}" =~ ^[5-9]$ ]]; then
-      echo "Download pecl_memcache for php 7.x..."
-      src_url=https://pecl.php.net/get/memcache-${pecl_memcache_oldver}.tgz && Download_src
-    else
-      echo "Download pecl_memcache for php 8.x..."
-      src_url=https://pecl.php.net/get/memcache-${pecl_memcache_ver}.tgz && Download_src
-    fi
+    for php_extension_target in ${php_extension_targets}; do
+      case "${php_extension_target}" in
+        5.3|5.4|5.5|5.6) pecl_memcache_selected_ver=${pecl_memcache_php53_56_ver} ;;
+        7.*) pecl_memcache_selected_ver=${pecl_memcache_php70_74_ver} ;;
+        8.*) pecl_memcache_selected_ver=${pecl_memcache_php80_up_ver} ;;
+        *) continue ;;
+      esac
+      echo "Download pecl_memcache ${pecl_memcache_selected_ver} for PHP ${php_extension_target}..."
+      src_url=https://pecl.php.net/get/memcache-${pecl_memcache_selected_ver}.tgz && Download_src
+    done
   fi
 
   # pecl_mongodb
   if [ "${pecl_mongodb}" == '1' ]; then
-    if [[ "${php_option}" =~ ^[1-4]$ ]] || [[ "${mphp_ver}" =~ ^5[3-6]$ ]]; then
-      echo "Download pecl mongo for php..."
-      src_url=https://pecl.php.net/get/mongo-${pecl_mongo_ver}.tgz && Download_src
-    elif [[ "${php_option}" =~ ^1[1-5]$ ]] || [[ "${mphp_ver}" =~ ^8[1-5]$ ]]; then
-      echo "Download pecl mongodb for PHP 8.1+..."
-      src_url=https://pecl.php.net/get/mongodb-${pecl_mongodb_ver}.tgz && Download_src
-    else
-      echo "Download pecl mongodb for legacy PHP..."
-      src_url=https://pecl.php.net/get/mongodb-${pecl_mongodb_oldver}.tgz && Download_src
-    fi
+    for php_extension_target in ${php_extension_targets}; do
+      case "${php_extension_target}" in
+        5.3|5.4|5.5|5.6) mongodb_package=mongo; mongodb_selected_ver=${pecl_mongo_php53_56_ver} ;;
+        7.0) mongodb_package=mongodb; mongodb_selected_ver=${pecl_mongodb_php70_ver} ;;
+        7.1) mongodb_package=mongodb; mongodb_selected_ver=${pecl_mongodb_php71_ver} ;;
+        7.2|7.3) mongodb_package=mongodb; mongodb_selected_ver=${pecl_mongodb_php72_73_ver} ;;
+        7.4|8.0) mongodb_package=mongodb; mongodb_selected_ver=${pecl_mongodb_php74_80_ver} ;;
+        8.*) mongodb_package=mongodb; mongodb_selected_ver=${pecl_mongodb_php81_up_ver} ;;
+        *) continue ;;
+      esac
+      echo "Download pecl_${mongodb_package} ${mongodb_selected_ver} for PHP ${php_extension_target}..."
+      src_url=https://pecl.php.net/get/${mongodb_package}-${mongodb_selected_ver}.tgz && Download_src
+    done
   fi
 
   # nodejs
